@@ -159,7 +159,7 @@ and something along the lines of :
 
 ![](https://i.imgur.com/fjweYIE.png)
 
-Happy Submitting!! :rocket:
+Happy Submitting! :rocket:
 
 
 # Author(s)
