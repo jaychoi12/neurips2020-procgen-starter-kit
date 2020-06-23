@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#test
 import argparse
 import os
 from pathlib import Path
