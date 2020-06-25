@@ -27,6 +27,8 @@ from ray.tune.utils import merge_dicts
 from ray.tune.registry import get_trainable_cls
 
 from utils.loader import load_envs, load_models, load_algorithms
+import imageio 
+
 
 """
 Note : This script has been adapted from :
@@ -49,6 +51,22 @@ load_models(os.getcwd()) # Load models
 # Load custom algorithms
 from algorithms import CUSTOM_ALGORITHMS
 load_algorithms(CUSTOM_ALGORITHMS)
+
+def mkdirs(*paths):
+    for path in paths:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+def log_video(log_dir, name, video, fps=20):
+    """ video: rgb arrays 
+    reference: https://imageio.readthedocs.io/en/stable/format_gif-pil.html
+    """
+    vid_kargs = {
+        'fps': fps   # duration per frame
+    }   
+    vid_name = '{}/{}'.format(log_dir, name)
+    mkdirs(os.path.dirname(vid_name))   # often is "videos/"
+    imageio.mimsave(vid_name, video, **vid_kargs)
 
 
 class RolloutSaver:
@@ -306,6 +324,7 @@ def run(args, parser):
     # New way: Allow user to specify a video output path.
     elif args.video_dir:
         video_dir = os.path.expanduser(args.video_dir)
+        print("\n\n\n", video_dir, "\n\n\n")
 
     # Do the actual rollout.
     with RolloutSaver(
@@ -390,6 +409,7 @@ def rollout(agent,
             video_callable=lambda x: True,
             force=True)
 
+    img_list = []
     steps = 0
     episodes = 0
     while keep_going(steps, num_steps, episodes, num_episodes):
@@ -430,8 +450,8 @@ def rollout(agent,
                     a_action = _flatten_action(a_action)  # tuple actions
                     action_dict[agent_id] = a_action
                     prev_actions[agent_id] = a_action
+            img_list.append(a_obs)
             action = action_dict
-
             action = action if multiagent else action[_DUMMY_AGENT_ID]
             next_obs, reward, done, info = env.step(action)
             episode_steps += 1
@@ -448,6 +468,7 @@ def rollout(agent,
                 reward_total += reward
             if not no_render:
                 env.render()
+            env.render(mode="human")
             saver.append_step(obs, action, next_obs, reward, done, info)
             steps += 1
             obs = next_obs
@@ -455,6 +476,8 @@ def rollout(agent,
         print("Episode #{}: reward: {} steps: {}".format(episodes, reward_total, episode_steps))
         if done:
             episodes += 1
+            img_list.append(next_obs)
+            log_video("video", str(episodes)+".gif", img_list)
 
 
 if __name__ == "__main__":

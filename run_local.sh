@@ -5,9 +5,9 @@ set -e
 # Your experiment file for submission   #
 #########################################
 
-# export EXPERIMENT_DEFAULT="experiments/impala-baseline.yaml"
-export EXPERIMENT_DEFAULT="experiments/procgen-starter-example.yaml"
+export EXPERIMENT_DEFAULT="experiments/procgen-starter-example_local.yaml"
 export EXPERIMENT=${EXPERIMENT:-$EXPERIMENT_DEFAULT}
+
 
 if [[ -z $AICROWD_IS_GRADING ]]; then
   ##########################################################################
@@ -17,11 +17,9 @@ if [[ -z $AICROWD_IS_GRADING ]]; then
   ##########################################################################
 
   export OUTPUTS_DIR=./outputs
-  # export RAY_MEMORY_LIMIT=100000000
-  export RAY_MEMORY_LIMIT=400000000
+  export RAY_MEMORY_LIMIT=1500000000
   export RAY_CPUS=2
-  # export RAY_STORE_MEMORY=1000000000
-  export RAY_STORE_MEMORY=4000000000
+  export RAY_STORE_MEMORY=1000000000
 
   # Cleaning output directory between multiple runs
   rm -rf ${OUTPUTS_DIR}
@@ -72,16 +70,14 @@ print_banner
 
 if [[ " $@ " =~ " --train " ]]; then
   export VALID_RUN=true
-  # echo "Executing: python train.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-1500000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-1000000000}"
-  # python train.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-1500000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-1000000000}
-  echo "Executing: python train.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-4000000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-1000000000}"
-  python train.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-4000000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-4000000000}
+  echo "Executing: python train.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-1500000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-1000000000}"
+  python train_local.py -f ${EXPERIMENT} --ray-memory ${RAY_MEMORY_LIMIT:-1500000000} --ray-num-cpus ${RAY_CPUS:-2} --ray-object-store-memory ${RAY_STORE_MEMORY:-1000000000}
   STATUS_CODE=$?
 fi
 
 
 if [[ " $@ " =~ " --rollout " ]]; then
-  export VALID_RUN=true
+  export VALID_RUN=true     
   export ROLLOUT_RUN=$(cat $EXPERIMENT | grep '  run:' | awk '{print $2}')
   export ROLLOUT_ENV=$(cat $EXPERIMENT | grep '  env:' | awk '{print $2}')
 
@@ -90,7 +86,7 @@ if [[ " $@ " =~ " --rollout " ]]; then
   fi
   echo "Rollout with checkpoint: $CHECKPOINT"
   echo "Executing: python ./rollout.py $CHECKPOINT --episodes ${EPISODES:-5} --run $ROLLOUT_RUN --env $ROLLOUT_ENV"
-  python ./rollout.py $CHECKPOINT --episodes ${EPISODES:-20} --run $ROLLOUT_RUN --env $ROLLOUT_ENV --video-dir videos
+  python ./rollout.py $CHECKPOINT --episodes ${EPISODES:-5} --run $ROLLOUT_RUN --env $ROLLOUT_ENV
   STATUS_CODE=$?
 fi
 

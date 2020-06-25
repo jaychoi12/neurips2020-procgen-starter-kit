@@ -1,10 +1,8 @@
 from ray.rllib.agents.trainer import with_common_config
 from ray.rllib.agents.dqn.dqn import GenericOffPolicyTrainer
-from ray.rllib.agents.sac.sac_tf_policy import SACTFPolicy
 from ray.rllib.utils.deprecation import deprecation_warning, DEPRECATED_VALUE
 
-from ray.rllib.agents.sac.sac_torch_policy import SACTorchPolicy
-from algorithms.drq_agent.drq_policy import DrqSACTorchPolicy
+from algorithms.dreamer_agent.dreamer_policy import DreamerTorchPolicy
 
 
 OPTIMIZER_SHARED_CONFIGS = [
@@ -36,11 +34,6 @@ DEFAULT_CONFIG = with_common_config({
     # Unsquash actions to the upper and lower bounds of env's action space.
     # Ignored for discrete action spaces.
     "normalize_actions": True,
-
-    # === Customs ===
-    "augmentation": True,
-    "aug_num": 2,
-    "max_shift": 4,  
 
     # === Learning ===
     # Disable setting done=True at end of episode. This should be set to True
@@ -131,6 +124,13 @@ DEFAULT_CONFIG = with_common_config({
 # yapf: enable
 
 
+def get_policy_class(config):
+    if config["framework"] == "torch":
+        from ray.rllib.agents.sac.sac_torch_policy import SACTorchPolicy
+        return SACTorchPolicy
+    else:
+        return SACTFPolicy
+
 
 def validate_config(config):
     if config.get("grad_norm_clipping", DEPRECATED_VALUE) != DEPRECATED_VALUE:
@@ -153,19 +153,11 @@ def validate_config(config):
                 error=True)
 
 
-# prevent sanme name as normal SAC
-NoAugSACTrainer = GenericOffPolicyTrainer.with_updates(
-    name="NoAugSAC",
-    default_config=DEFAULT_CONFIG,
-    validate_config=validate_config,
-    default_policy=SACTorchPolicy,
-    get_policy_class=lambda x: SACTorchPolicy,
-)
 
-DrqSACTrainer = GenericOffPolicyTrainer.with_updates(
-    name="DrqSAC",
+DreamerTrainer = GenericOffPolicyTrainer.with_updates(
+    name="Dreamer",
     default_config=DEFAULT_CONFIG,
     validate_config=validate_config,
-    default_policy=DrqSACTorchPolicy,
-    get_policy_class=lambda x: DrqSACTorchPolicy,
+    default_policy=DreamerTorchPolicy,
+    get_policy_class=get_policy_class,
 )

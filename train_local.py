@@ -12,8 +12,11 @@ from ray.tune.result import DEFAULT_RESULTS_DIR
 from ray.tune.resources import resources_to_json
 from ray.tune.tune import _make_scheduler, run_experiments
 from ray.rllib.utils.framework import try_import_tf, try_import_torch
+from ray.tune.logger import JsonLogger, CSVLogger
+
 
 from utils.loader import load_envs, load_models, load_algorithms
+from utils.utils import TBXLogger, read_file, build_TBXLogger
 from callbacks import CustomCallbacks
 
 # Try to import both backends for flag checking/warnings.
@@ -24,6 +27,11 @@ torch, _ = try_import_torch()
 Note : This script has been adapted from :
     https://github.com/ray-project/ray/blob/master/rllib/train.py
 """
+
+#######################################################################################################
+#####################################   Setup   #####################################################
+#######################################################################################################
+
 
 EXAMPLE_USAGE = """
 Training example:
@@ -44,6 +52,12 @@ from algorithms import CUSTOM_ALGORITHMS
 load_algorithms(CUSTOM_ALGORITHMS)
 
 print(ray.rllib.contrib.registry.CONTRIBUTED_ALGORITHMS)
+
+
+#######################################################################################################
+#####################################   Helper Funcs   #################################################
+#######################################################################################################
+
 
 def create_parser(parser_creator=None):
     parser = make_parser(
@@ -76,17 +90,17 @@ def create_parser(parser_creator=None):
         help="Emulate multiple cluster nodes for debugging.")
     parser.add_argument(
         "--ray-redis-max-memory",
-        default=4000000000,
+        default=None,
         type=int,
         help="--redis-max-memory to use if starting a new cluster.")
     parser.add_argument(
         "--ray-memory",
-        default=4000000000,
+        default=None,
         type=int,
         help="--memory to use if starting a new cluster.")
     parser.add_argument(
         "--ray-object-store-memory",
-        default=4000000000,
+        default=None,
         type=int,
         help="--object-store-memory to use if starting a new cluster.")
     parser.add_argument(
@@ -141,7 +155,43 @@ def create_parser(parser_creator=None):
         type=str,
         help="If specified, use config options from this file. Note that this "
         "overrides any trial-specific options set via flags above.")
+
+    # NOTE: customs 
+    parser.add_argument("--no-tensorboard", default=False, action='store_true')
+    
     return parser
+
+
+
+def get_tbx_logger_fields():
+    """ fields to be logged in tensorboard 
+    """
+    return [
+        'episode_reward_max', 
+        'episode_reward_min', 
+        'episode_reward_mean', 
+        # 'episode_len_mean', 
+        'timesteps_total', 
+        'episodes_total', 
+        'training_iteration', 
+        'time_this_iter_s', 
+        'time_total_s', 
+    ] 
+
+
+def make_loggers(args):
+    """ loggings for trianing stats and plots
+    """
+    loggers = (JsonLogger, CSVLogger)
+    if not args.no_tensorboard:
+        tb_logger = build_TBXLogger(*get_tbx_logger_fields())
+        loggers = loggers + (tb_logger,)
+    return loggers 
+
+
+#######################################################################################################
+######################################   Main   ####################################################
+#######################################################################################################
 
 
 def run(args, parser):
@@ -220,6 +270,12 @@ def run(args, parser):
             redis_max_memory=args.ray_redis_max_memory,
             num_cpus=args.ray_num_cpus,
             num_gpus=args.ray_num_gpus)
+
+    # NOTE: customs 
+    for exp in experiments.values():
+        exp["loggers"] = make_loggers(args)
+    
+    # launch training 
     run_experiments(
         experiments,
         scheduler=_make_scheduler(args),
