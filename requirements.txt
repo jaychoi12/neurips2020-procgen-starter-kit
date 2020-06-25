@@ -1,5 +1,6 @@
 ray[rllib]==0.8.5
 procgen==0.10.1
 tensorflow==2.1.0
-mlflow
+mlflow==1.8.0
+boto3==1.13.10
 kornia==0.3.1
