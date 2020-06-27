@@ -16,12 +16,12 @@ procgen-starter-example:
     # === Stop Conditions ===
     ################################################
     stop:
-        timesteps_total: 8000000  # 100
+        timesteps_total: 500000  # 100
 
     ################################################
     # === Settings for Checkpoints ===
     ################################################
-    checkpoint_freq: 100
+    checkpoint_freq: 1
     checkpoint_at_end: True
     keep_checkpoints_num: 5
 
@@ -57,7 +57,7 @@ procgen-starter-example:
         # Discount factor of the MDP.
         gamma: 0.99
         # The default learning rate.
-        lr: 0.0005
+        lr: 0.0001
         # Number of steps after which the episode is forced to terminate. Defaults
         # to `env.spec.max_episode_steps` (if present) for Gym envs.
         horizon: null
@@ -164,12 +164,12 @@ procgen-starter-example:
         ################################################
         # Number of rollout worker actors to create for parallel sampling. Setting
         # this to 0 will force rollouts to be done in the trainer actor.
-        num_workers: 6
+        num_workers: 8
 
         # Number of environments to evaluate vectorwise per worker. This enables
         # model inference batching, which can improve performance for inference
         # bottlenecked workloads.
-        num_envs_per_worker: 12
+        num_envs_per_worker: 16
 
         # Divide episodes into fragments of this many steps each during rollouts.
         # Sample batches of this size are collected from rollout workers and
@@ -186,7 +186,7 @@ procgen-starter-example:
         #
         # The dataflow here can vary per algorithm. For example, PPO further
         # divides the train batch into minibatches for multi-epoch SGD.
-        rollout_fragment_length: 256
+        rollout_fragment_length: 200
 
         # Whether to rollout "complete_episodes" or "truncate_episodes" to
         # `rollout_fragment_length` length unrolls. Episode truncation guarantees
